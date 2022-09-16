@@ -1,4 +1,6 @@
-﻿namespace APD_BooleanCalculator
+﻿using System.ComponentModel.Design;
+
+namespace APD_BooleanCalculator
 {
     public class BooleanCalculator
     {
@@ -6,32 +8,46 @@
         {
             bool result = false;
 
-            if (bool.TryParse(booleanValue, out result)) return result;
-
-            if (booleanValue.IndexOf("(") > -1)
+            while (booleanValue.IndexOf("(") > -1)
             {
-                var openingPosition = booleanValue.IndexOf("(");
-                var closingPosition = booleanValue.LastIndexOf(")");
-                return Parse(booleanValue.Substring(openingPosition + 1, closingPosition - openingPosition - 1));
+                // Process parentheses
+                int openingParenthesisPosition = booleanValue.IndexOf("(");
+                int closingParenthesisPosition = 0;
+
+                int currentPosition = openingParenthesisPosition;
+                int parenthesisCount = 0;
+
+                foreach (char c in booleanValue.Substring(openingParenthesisPosition))
+                {
+                    if (c == '(') parenthesisCount++;
+                    else if (c == ')') parenthesisCount--;
+
+                    if (parenthesisCount == 0) break;
+                    currentPosition++;
+                }
+
+                closingParenthesisPosition = currentPosition - openingParenthesisPosition;
+                var expressionResult = Parse(booleanValue.Substring(openingParenthesisPosition + 1, closingParenthesisPosition - 1));
+
+                booleanValue = booleanValue.Remove(openingParenthesisPosition,
+                        closingParenthesisPosition + 1)
+                    .Insert(openingParenthesisPosition, expressionResult.ToString().ToUpper());
             }
 
-            if (booleanValue == "(TRUE)") return true;
-            else if (booleanValue == "(FALSE)") return false;
+            if (bool.TryParse(booleanValue, out result)) return result;
 
             if (booleanValue.Split(" OR ", 2, StringSplitOptions.TrimEntries).Length > 1)
             {
-                var expressionOne = Parse(booleanValue.Split(" OR ", 2, StringSplitOptions.TrimEntries)[0]);
-                var expressionTwo = Parse(booleanValue.Split(" OR ", 2, StringSplitOptions.TrimEntries)[1]);
+                var args = ProcessTwoArgumentOperator(booleanValue, "OR");
 
-                return expressionOne || expressionTwo;
+                return Parse(args[0]) || Parse(args[1]);
             }
 
             if (booleanValue.Split(" AND ", 2, StringSplitOptions.TrimEntries).Length > 1)
             {
-                var expressionOne = Parse(booleanValue.Split(" AND ", 2, StringSplitOptions.TrimEntries)[0]);
-                var expressionTwo = Parse(booleanValue.Split(" AND ", 2, StringSplitOptions.TrimEntries)[1]);
+                var args = ProcessTwoArgumentOperator(booleanValue, "AND");
 
-                return expressionOne && expressionTwo;
+                return Parse(args[0]) && Parse(args[1]);
             }
 
             if (booleanValue.Split("NOT", 2, StringSplitOptions.TrimEntries).Length > 1)
@@ -39,9 +55,17 @@
                 return !Parse(booleanValue.Split("NOT", 2, StringSplitOptions.TrimEntries).Last());
             }
 
-
-
             return result;
+        }
+
+        private static List<string> ProcessTwoArgumentOperator(string booleanValue, string operatorName)
+        {
+            List<string> arguments = new List<string>();
+
+            arguments.Add(booleanValue.Split($" {operatorName} ", 2, StringSplitOptions.TrimEntries)[0]);
+            arguments.Add(booleanValue.Split($" {operatorName} ", 2, StringSplitOptions.TrimEntries)[1]);
+
+            return arguments;
         }
     }
 }
