@@ -21,6 +21,11 @@ namespace Boolean_Calculator_Tests
         [TestCase("TRUE OR TRUE AND FALSE", true)]
         [TestCase("TRUE OR TRUE OR TRUE AND FALSE", true)]
         [TestCase("TRUE OR FALSE AND NOT FALSE", true)]
+        public void return_expected_boolean_for_string_input(string boolInput, bool expected)
+        {
+            Assert.That(BooleanCalculator.Solve(boolInput), Is.EqualTo(expected));
+        }
+
         [TestCase("(TRUE)", true)]
         [TestCase("(FALSE)", false)]
         [TestCase("((FALSE))", false)]
@@ -30,9 +35,9 @@ namespace Boolean_Calculator_Tests
         [TestCase("(FALSE OR TRUE) AND (TRUE OR FALSE)", true)]
         [TestCase("(TRUE OR TRUE OR TRUE) AND FALSE", false)]
         [TestCase("NOT (TRUE AND TRUE)", false)]
-        public void return_expected_boolean_for_string_input(string boolInput, bool expected)
+        public void return_expected_boolean_for_input_with_parentheses(string boolInput, bool expected)
         {
-            Assert.That(BooleanCalculator.Parse(boolInput), Is.EqualTo(expected));
+            Assert.That(BooleanCalculator.Solve(boolInput), Is.EqualTo(expected));
         }
     }
 }

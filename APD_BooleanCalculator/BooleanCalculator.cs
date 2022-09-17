@@ -1,64 +1,86 @@
 ﻿using System.ComponentModel.Design;
+using System.Text.RegularExpressions;
 
 namespace APD_BooleanCalculator
 {
     public class BooleanCalculator
     {
-        public static bool Parse(string booleanValue)
+        public static bool Solve(string booleanValue)
         {
             bool result = false;
 
-            while (booleanValue.IndexOf("(") > -1)
+            while (TokenOperatorExists("(", booleanValue) && TokenOperatorExists(")", booleanValue))
             {
                 // Process parentheses
-                int openingParenthesisPosition = booleanValue.IndexOf("(");
-                int closingParenthesisPosition = 0;
+                int openingParenthesisPosition = GetOpeningParenthesisPosition(booleanValue);
+                int closingParenthesisPosition = GetClosingParenthesisPosition(booleanValue, openingParenthesisPosition);
+                var expressionResult = Solve(
+                    ExtractExpressionFromParentheses(booleanValue, openingParenthesisPosition, closingParenthesisPosition));
 
-                int currentPosition = openingParenthesisPosition;
-                int parenthesisCount = 0;
-
-                foreach (char c in booleanValue.Substring(openingParenthesisPosition))
-                {
-                    if (c == '(') parenthesisCount++;
-                    else if (c == ')') parenthesisCount--;
-
-                    if (parenthesisCount == 0) break;
-                    currentPosition++;
-                }
-
-                closingParenthesisPosition = currentPosition - openingParenthesisPosition;
-                var expressionResult = Parse(booleanValue.Substring(openingParenthesisPosition + 1, closingParenthesisPosition - 1));
-
-                booleanValue = booleanValue.Remove(openingParenthesisPosition,
-                        closingParenthesisPosition + 1)
-                    .Insert(openingParenthesisPosition, expressionResult.ToString().ToUpper());
+                booleanValue = ReplaceParenthesesWithResult(booleanValue, expressionResult, openingParenthesisPosition,
+                    closingParenthesisPosition); 
             }
 
             if (bool.TryParse(booleanValue, out result)) return result;
 
-            if (OperatorExists("OR", booleanValue))
+            if (TokenOperatorExists("OR", booleanValue))
             {
                 var args = ProcessTwoArgumentOperator(booleanValue, "OR");
 
-                return Parse(args[0]) || Parse(args[1]);
+                return Solve(args[0]) || Solve(args[1]);
             }
 
-            if (OperatorExists("AND", booleanValue))
+            if (TokenOperatorExists("AND", booleanValue))
             {
                 var args = ProcessTwoArgumentOperator(booleanValue, "AND");
 
-                return Parse(args[0]) && Parse(args[1]);
+                return Solve(args[0]) && Solve(args[1]);
             }
 
-            if (OperatorExists("NOT", booleanValue))
+            if (TokenOperatorExists("NOT", booleanValue))
             {
-                return !Parse(booleanValue.Split("NOT", 2, StringSplitOptions.TrimEntries).Last());
+                return !Solve(booleanValue.Split("NOT", 2, StringSplitOptions.TrimEntries).Last());
             }
 
             return result;
         }
 
-        private static bool OperatorExists(string operatorName, string booleanValue)
+        private static int GetOpeningParenthesisPosition(string booleanValue)
+        {
+            return booleanValue.IndexOf("(");
+        }
+        private static int GetClosingParenthesisPosition(string booleanValue, int openingParenthesisPosition)
+        {
+            int currentPosition = openingParenthesisPosition;
+            int parenthesisCount = 0;
+
+            foreach (char c in booleanValue.Substring(openingParenthesisPosition))
+            {
+                if (c == '(') parenthesisCount++;
+                else if (c == ')') parenthesisCount--;
+
+                if (parenthesisCount == 0) break;
+                currentPosition++;
+            }
+
+            return currentPosition - openingParenthesisPosition;
+        }
+
+
+        private static string ExtractExpressionFromParentheses(string booleanValue, int openingParenthesisPosition, int closingParenthesisPosition)
+        {
+            return booleanValue.Substring(openingParenthesisPosition + 1, closingParenthesisPosition - 1);
+        }
+
+        private static string ReplaceParenthesesWithResult(string booleanValue, bool expressionResult,
+            int openingParenthesisPosition, int closingParenthesisPosition)
+        {
+            return booleanValue.Remove(openingParenthesisPosition,
+                    closingParenthesisPosition + 1)
+                .Insert(openingParenthesisPosition, expressionResult.ToString().ToUpper());
+        }
+
+        private static bool TokenOperatorExists(string operatorName, string booleanValue)
         {
             return booleanValue.Split($"{operatorName}", 2, StringSplitOptions.TrimEntries).Length > 1;
         }
