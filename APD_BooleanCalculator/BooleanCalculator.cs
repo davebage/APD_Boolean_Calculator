@@ -3,13 +3,19 @@ using System.Text.RegularExpressions;
 
 namespace APD_BooleanCalculator
 {
+
     public class BooleanCalculator
     {
+        private const string NOT_OPERATOR = "NOT";
+        private const string AND_OPERATOR = "AND";
+        private const string OR_OPERATOR = "OR";
+        private const char OPENING_PARENTHESIS = '(';
+        private const char CLOSING_PARENTHESIS = ')';
         public static bool Solve(string booleanValue)
         {
             bool result = false;
 
-            while (TokenOperatorExists("(", booleanValue) && TokenOperatorExists(")", booleanValue))
+            while (TokenOperatorExists(OPENING_PARENTHESIS.ToString(), booleanValue) && TokenOperatorExists(CLOSING_PARENTHESIS.ToString(), booleanValue))
             {
                 // Process parentheses
                 int openingParenthesisPosition = GetOpeningParenthesisPosition(booleanValue);
@@ -23,23 +29,23 @@ namespace APD_BooleanCalculator
 
             if (bool.TryParse(booleanValue, out result)) return result;
 
-            if (TokenOperatorExists("OR", booleanValue))
+            if (TokenOperatorExists(OR_OPERATOR, booleanValue))
             {
-                var args = ProcessTwoArgumentOperator(booleanValue, "OR");
+                var args = ProcessBinaryArgumentOperator(OR_OPERATOR, booleanValue);
 
                 return Solve(args[0]) || Solve(args[1]);
             }
 
-            if (TokenOperatorExists("AND", booleanValue))
+            if (TokenOperatorExists(AND_OPERATOR, booleanValue))
             {
-                var args = ProcessTwoArgumentOperator(booleanValue, "AND");
+                var args = ProcessBinaryArgumentOperator(AND_OPERATOR, booleanValue);
 
                 return Solve(args[0]) && Solve(args[1]);
             }
 
-            if (TokenOperatorExists("NOT", booleanValue))
+            if (TokenOperatorExists(NOT_OPERATOR, booleanValue))
             {
-                return !Solve(booleanValue.Split("NOT", 2, StringSplitOptions.TrimEntries).Last());
+                return !Solve(ProcessUnaryOperator(NOT_OPERATOR, booleanValue));
             }
 
             return result;
@@ -47,7 +53,7 @@ namespace APD_BooleanCalculator
 
         private static int GetOpeningParenthesisPosition(string booleanValue)
         {
-            return booleanValue.IndexOf("(");
+            return booleanValue.IndexOf(OPENING_PARENTHESIS);
         }
         private static int GetClosingParenthesisPosition(string booleanValue, int openingParenthesisPosition)
         {
@@ -56,8 +62,8 @@ namespace APD_BooleanCalculator
 
             foreach (char c in booleanValue.Substring(openingParenthesisPosition))
             {
-                if (c == '(') parenthesisCount++;
-                else if (c == ')') parenthesisCount--;
+                if (c == OPENING_PARENTHESIS) parenthesisCount++;
+                else if (c == CLOSING_PARENTHESIS) parenthesisCount--;
 
                 if (parenthesisCount == 0) break;
                 currentPosition++;
@@ -85,7 +91,12 @@ namespace APD_BooleanCalculator
             return booleanValue.Split($"{operatorName}", 2, StringSplitOptions.TrimEntries).Length > 1;
         }
 
-        private static List<string> ProcessTwoArgumentOperator(string booleanValue, string operatorName)
+        private static string ProcessUnaryOperator(string operatorName, string booleanValue)
+        {
+            return booleanValue.Split(operatorName, 2, StringSplitOptions.TrimEntries).Last();
+        }
+
+        private static List<string> ProcessBinaryArgumentOperator(string operatorName, string booleanValue)
         {
             List<string> arguments = new List<string>();
 
